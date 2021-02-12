@@ -6,6 +6,7 @@ import com.mss.billing.entities.Operation;
 import com.mss.billing.fiegn.ClientRestClient;
 import com.mss.billing.rep.CompteRepository;
 import com.mss.billing.rep.OperationRepository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Collection;
 import java.util.Date;
 
-@RestController
+@Service
 @Transactional
 public class CompteServiceImp implements ICompteService {
     final CompteRepository compteRepository;
@@ -28,15 +29,15 @@ public class CompteServiceImp implements ICompteService {
         this.operationRepository = operationRepository;
         this.clientRestClient = clientRestClient;
     }
-
-    @PostMapping(path = "/add-compte")
-    Compte addCompte(Compte c){
+    @Override
+    public Compte addCompte(Compte c){
         compteRepository.save(c);
         return c;
     }
 
-    @PostMapping(path = "/versement")
-    Compte addVersement(Operation o){
+    //@PostMapping(path = "/versement")
+    @Override
+    public Compte addVersement(Operation o){
         o.setType("DEBIT");
         o.setDate(new Date());
         operationRepository.save(o);
@@ -45,8 +46,8 @@ public class CompteServiceImp implements ICompteService {
         compteRepository.save(c);
         return c;
     }
-    @PostMapping(path = "/retrait")
-    Compte addRetrait(Operation o){
+    @Override
+    public Compte addRetrait(Operation o){
         o.setType("CREDIT");
         o.setDate(new Date());
         operationRepository.save(o);
@@ -55,11 +56,13 @@ public class CompteServiceImp implements ICompteService {
         compteRepository.save(c);
         return c;
     }
-    @PostMapping(path = "/comptetocompte")
-    void addRetrait(@RequestParam(name = "compte_debiteur") Compte compteDebiteur ,
-                      @RequestParam(name = "compte_crediteur") Compte compteCrediteur,
-                      @RequestParam(name = "montant") double montant
+    @Override
+    public void addRetrait(Long id_compteDebiteur ,
+                       Long id_compteCrediteur,
+                       double montant
                       ){
+        Compte compteDebiteur= compteRepository.findById(id_compteDebiteur).get();
+        Compte compteCrediteur= compteRepository.findById(id_compteCrediteur).get();
         Operation opCredit = new Operation(null,montant,new Date(),"DEBIT",compteDebiteur);
         Operation opDebit = new Operation(null,montant,new Date(),"CREDIT",compteCrediteur);
         compteDebiteur.setSolde(compteDebiteur.getSolde()+montant);
@@ -70,13 +73,13 @@ public class CompteServiceImp implements ICompteService {
         compteRepository.save(compteCrediteur);
     }
 
-    @GetMapping(path = "/getOpetration")
-    Collection<Operation> addRetrait(@RequestParam(name = "compte") Long compte_id){
+    @Override
+    public Collection<Operation> getoperation( Long compte_id){
         Compte c  = compteRepository.findById(compte_id).get();
         return c.getOperations();
     }
-    @GetMapping(path = "/consulter-compte")
-    Compte consulterCompte(@RequestParam(name = "compte") Long compte_id){
+    @Override
+    public Compte consulterCompte(Long compte_id){
         Compte c  = compteRepository.findById(compte_id).get();
         c.setClient(clientRestClient.getCustomerById(c.getId()));
 
@@ -84,8 +87,8 @@ public class CompteServiceImp implements ICompteService {
 
     }
 
-    @PostMapping(path = "/toggle-compte")
-    Compte toggleCompte(@RequestParam(name = "compte") Long compte_id){
+    @Override
+    public Compte toggleCompte(Long compte_id){
         Compte c  = compteRepository.findById(compte_id).get();
         if(c.getEtat().equals("SUSPENDED"))
             c.setEtat("ACTIVE");
